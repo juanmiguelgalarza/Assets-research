@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benchmark Comparativo — Agencias Digitales</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    background: #F4F4F2;
+    padding: 48px;
+    min-width: 1500px;
+  }
+  .page-header { margin-bottom: 32px; }
+  .page-title { font-size: 28px; font-weight: 700; color: #1A1A1A; letter-spacing: -0.5px; }
+  .page-subtitle { font-size: 14px; color: #888; margin-top: 6px; font-weight: 400; }
+  .legend { display: flex; gap: 24px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #555; }
+  .legend-check { width: 20px; height: 20px; background: #2B2B2B; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; }
+  .legend-empty { width: 20px; height: 20px; background: #E8E8E6; border-radius: 4px; }
+  .badge-lat { display: inline-block; background: #E5542B; color: white; font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 3px; margin-top: 4px; letter-spacing: 0.5px; }
+  .badge-int { display: inline-block; background: #4A90D9; color: white; font-size: 8px; font-weight: 700; padding: 2px 5px; border-radius: 3px; margin-top: 4px; letter-spacing: 0.5px; }
+  .country-tag { display: block; font-size: 9px; color: #BBB; font-weight: 400; margin-top: 3px; letter-spacing: 0.2px; }
+  .table-wrapper { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 20px rgba(0,0,0,0.08); }
+  .table-scroll { overflow: auto; max-height: calc(100vh - 220px); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .header-row th { background: #1E1E1E; color: white; font-weight: 600; font-size: 11px; text-align: center; padding: 14px 8px; letter-spacing: 0.3px; vertical-align: bottom; border-right: 1px solid #333; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+  .header-row th:first-child { text-align: left; padding-left: 20px; width: 200px; min-width: 200px; }
+  .header-row th:nth-child(2) { text-align: left; width: 220px; min-width: 220px; padding-left: 12px; }
+  .col-lat { border-top: 3px solid #E5542B; }
+  .col-int { border-top: 3px solid #4A90D9; }
+  .company-name { font-size: 11px; font-weight: 700; line-height: 1.2; }
+  tr.section-header td { background: #E5542B; color: white; font-weight: 700; font-size: 11px; padding: 10px 20px; letter-spacing: 0.4px; text-transform: uppercase; border-bottom: none; }
+  tr.section-header td:not(:first-child) { border-right: 1px solid #D44A22; }
+  tr.sub-row td:first-child { background: white; color: transparent; font-size: 11px; }
+  tr.sub-row td:nth-child(2) { background: white; color: #444; font-size: 11px; padding: 9px 12px; border-bottom: 1px solid #ECECEA; vertical-align: middle; }
+  td.check { text-align: center; vertical-align: middle; padding: 8px; border-right: 1px solid #ECECEA; border-bottom: 1px solid #ECECEA; }
+  td.check .tick { width: 22px; height: 22px; background: #2B2B2B; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; }
+  td.check.empty { background: #F9F9F7; }
+  tr:nth-child(even) td.check { background: #FAFAF8; }
+  tr:nth-child(even) td.check.empty { background: #F5F5F3; }
+  tr.section-header td.check { background: transparent !important; border: none; }
+  tr.text-row td:first-child { background: #2B2B2B; color: white; font-weight: 600; font-size: 11px; padding: 11px 20px; vertical-align: top; }
+  tr.text-row td:nth-child(2) { background: white; color: #444; font-size: 11px; padding: 9px 12px; border-bottom: 1px solid #ECECEA; vertical-align: top; }
+  td.value-text { font-size: 10px; color: #555; padding: 9px 8px; text-align: left; vertical-align: top; border-right: 1px solid #ECECEA; border-bottom: 1px solid #ECECEA; line-height: 1.45; max-width: 160px; }
+  td.value-text.na-text { background: #F5F5F3; color: #AAA; text-align: center; font-style: italic; }
+  td.value-text ul { padding-left: 14px; margin: 0; }
+  td.value-text ul li { margin-bottom: 2px; }
+  td:first-child, th:first-child { position: sticky; left: 0; z-index: 1; }
+  td:nth-child(2), th:nth-child(2) { position: sticky; left: 200px; z-index: 1; }
+  th:first-child, th:nth-child(2) { z-index: 3; }
+  /* Standalone row */
+  tr.standalone td:first-child { background: #2B2B2B; color: white; font-weight: 600; font-size: 11px; padding: 11px 20px; vertical-align: middle; }
+  tr.standalone td:nth-child(2) { background: white; color: #444; font-size: 11px; padding: 9px 12px; border-bottom: 1px solid #ECECEA; vertical-align: middle; }
+  /* Country label cell (single value text, more compact) */
+  td.country-cell { font-size: 11px; font-weight: 600; color: #1A1A1A; padding: 9px 8px; text-align: center; vertical-align: middle; border-right: 1px solid #ECECEA; border-bottom: 1px solid #ECECEA; background: #FFF8F0; }
+  td.country-cell.na { background: #F5F5F3; color: #AAA; font-weight: 400; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div class="page-title">Benchmark Comparativo — Agencias Digitales</div>
+  <div class="page-subtitle">Análisis de 12 agencias · Mercado Latinoamérica y referentes internacionales</div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-check">✓</div><span>Disponible / Aplica</span></div>
+    <div class="legend-item"><div class="legend-empty"></div><span>No disponible / N/D</span></div>
+    <div class="legend-item"><div class="badge-lat">LAT</div><span>Latinoamérica</span></div>
+    <div class="legend-item"><div class="badge-int">INT</div><span>Internacional</span></div>
+  </div>
+</div>
+<div class="table-wrapper">
+<div class="table-scroll">
+<table>
+<thead>
+<tr class="header-row">
+  <th></th><th></th>
+  <th class="col-lat"><div class="company-name">BlackSip</div><div class="badge-lat">LAT</div><span class="country-tag">Colombia</span></th>
+  <th class="col-lat"><div class="company-name">Si Señor<br>Agencia</div><div class="badge-lat">LAT</div><span class="country-tag">Colombia</span></th>
+  <th class="col-lat"><div class="company-name">Asylum</div><div class="badge-lat">LAT</div><span class="country-tag">Colombia</span></th>
+  <th class="col-lat"><div class="company-name">Globant<br>GUT</div><div class="badge-lat">LAT</div><span class="country-tag">Argentina</span></th>
+  <th class="col-lat"><div class="company-name">Mango<br>&amp;Cía</div><div class="badge-lat">LAT</div><span class="country-tag">Argentina</span></th>
+  <th class="col-lat"><div class="company-name">Pubsa</div><div class="badge-lat">LAT</div><span class="country-tag">México</span></th>
+  <th class="col-lat"><div class="company-name">Latam<br>click</div><div class="badge-lat">LAT</div><span class="country-tag">Paraguay</span></th>
+  <th class="col-lat"><div class="company-name">Sprint</div><div class="badge-lat">LAT</div><span class="country-tag">Chile</span></th>
+  <th class="col-int"><div class="company-name">Performics</div><div class="badge-int">INT</div><span class="country-tag">España</span></th>
+  <th class="col-int"><div class="company-name">JellyFish</div><div class="badge-int">INT</div><span class="country-tag">Reino Unido</span></th>
+  <th class="col-int"><div class="company-name">Frubis<br>Publicis Groupe</div><div class="badge-int">INT</div><span class="country-tag">Global</span></th>
+  <th class="col-int"><div class="company-name">Flywheel</div><div class="badge-int">INT</div><span class="country-tag">Estados Unidos</span></th>
+</tr>
+</thead>
+<tbody>
+
+<!-- ==================== PAÍS BASE ==================== -->
+<tr class="section-header"><td colspan="14">País Base</td></tr>
+<tr class="standalone"><td>País Base</td><td>Sede principal</td>
+  <td class="country-cell">Colombia</td>
+  <td class="country-cell">Colombia</td>
+  <td class="country-cell">Colombia</td>
+  <td class="country-cell">Argentina</td>
+  <td class="country-cell">Argentina</td>
+  <td class="country-cell">México</td>
+  <td class="country-cell">Paraguay</td>
+  <td class="country-cell">Chile</td>
+  <td class="country-cell">España</td>
+  <td class="country-cell">Reino Unido</td>
+  <td class="country-cell na">N/D</td>
+  <td class="country-cell">Estados Unidos</td>
+</tr>
+
+<!-- ==================== ALCANCE GEOGRÁFICO ==================== -->
+<tr class="section-header"><td colspan="14">Alcance Geográfico</td></tr>
+<tr class="sub-row"><td></td><td>Latam</td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+</tr>
+<tr class="sub-row"><td></td><td>Estados Unidos</td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+</tr>
+<tr class="sub-row"><td></td><td>Europa</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+</tr>
+<tr class="sub-row"><td></td><td>África</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Asia</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+</tr>
+
+<!-- ==================== METODOLOGÍA DE TRABAJO ==================== -->
+<tr class="section-header"><td colspan="14">Metodología de Trabajo</td></tr>
+<tr class="text-row">
+  <td>Enfoque metodológico</td><td>—</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text"><strong>Scientific Advertising:</strong> enfoque publicitario basado en pruebas y mediciones.<br><br><strong>Growth Marketing / Growth Hacking:</strong> disciplina que combina técnicas de Marketing, redes sociales, ingeniería, mejora del producto y analítica web. Se basa en métodos científicos donde se plantean hipótesis y, mediante tests, se determina cuáles estrategias funcionan o no.</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text"><strong>El Doble Diamante:</strong> proceso de diseño estratégico que garantiza que se exploren todas las posibilidades antes de ejecutar la mejor solución.</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+</tr>
+
+<!-- ==================== CATEGORÍAS CON LAS QUE TRABAJAN ==================== -->
+<tr class="section-header"><td colspan="14">Categorías con las que Trabajan</td></tr>
+<tr class="sub-row"><td></td><td>Banca</td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Automotriz</td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Consumo masivo</td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+</tr>
+<tr class="sub-row"><td></td><td>Tecnología</td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+</tr>
+<tr class="sub-row"><td></td><td>Retailers</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Aerolíneas</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Salud</td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+</tr>
+<tr class="sub-row"><td></td><td>Educación</td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Deportes</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Telecomunicaciones</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>ONGs</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>TV Pagada</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Desarrollos Inmobiliarios</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Seguros</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+</tr>
+<tr class="sub-row"><td></td><td>Ecommerce</td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check empty"></td>
+  <td class="check"><span class="tick">✓</span></td>
+</tr>
+
+<!-- ==================== SERVICIOS Y PRODUCTOS ==================== -->
+<tr class="section-header"><td colspan="14">Servicios y Productos Comunicados</td></tr>
+<tr class="text-row">
+  <td>Portafolio principal</td><td>—</td>
+  <td class="value-text">
+    <ul>
+      <li>Brandformance</li>
+      <li>Commerce</li>
+      <li>Leads</li>
+      <li>Education</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Automatización</li>
+      <li>Contenidos</li>
+      <li>Pauta Digital</li>
+      <li>Ingeniería Web</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Estrategia y Planeación</li>
+      <li>Business-Driven Creativity</li>
+      <li>Performance</li>
+      <li>Inteligencia de Negocios</li>
+      <li>Innovación y Tecnología</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>GUT</li>
+      <li>Digital Evolution</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Campañas de Performance</li>
+      <li>Automatizaciones de Email</li>
+      <li>Bases de datos / Generación y enriquecimiento</li>
+      <li>Desarrollo, Programación, A/B Testing</li>
+      <li>Diseño Gráfico, Creatividad</li>
+      <li>Integraciones y CRM</li>
+      <li>Automatización y Growth</li>
+      <li>Bots</li>
+      <li>Data y Reporting</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Google Ads</li>
+      <li>Meta Ads</li>
+      <li>TikTok Ads</li>
+      <li>Programmatic</li>
+      <li>Dashboards</li>
+      <li>Measurement Analytics</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Paid Media - Pauta Digital</li>
+      <li>Audiencias Propias</li>
+      <li>Acciones Funnel-Oriented</li>
+      <li>Análisis y Optimización</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Growth &amp; Performance</li>
+      <li>Consultoría</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Performance Media</li>
+      <li>Performance Content</li>
+      <li>Planning &amp; Insights Services</li>
+      <li>Analítica y Tecnología</li>
+      <li>Consultoría de Performance</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Creatividad</li>
+      <li>Medios</li>
+      <li>Partner Tecnológico</li>
+      <li>Datos</li>
+      <li>Estrategia</li>
+      <li>Tecnología</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Performance</li>
+      <li>Data</li>
+      <li>Retail</li>
+      <li>Consulting</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>Productos</li>
+      <li>Commerce Cloud</li>
+      <li>Servicios</li>
+      <li>Full Commerce Strategy &amp; Execution</li>
+      <li>Managed Media</li>
+      <li>Retail Excellence</li>
+      <li>Content &amp; Creative</li>
+      <li>Consulting</li>
+    </ul>
+  </td>
+</tr>
+
+<!-- ==================== PORTAFOLIO IA ==================== -->
+<tr class="section-header"><td colspan="14">Portafolio de Soluciones IA</td></tr>
+<tr class="text-row">
+  <td>Soluciones de IA</td><td>—</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text"><strong>Asylum AI Lab:</strong> laboratorio especializado en inteligencia artificial y unidad transversal que mantiene actualizados a los equipos de la Agencia con los últimos avances tecnológicos, testeando continuamente nuevas plataformas y aplicaciones, y creando soluciones a la medida que adaptan la IA a las necesidades específicas de cada cliente.<br><br><strong>Aplicaciones:</strong>
+    <ul>
+      <li>Agentes AI para Contenido e Informes</li>
+      <li>Avatares y Personalización</li>
+      <li>Conceptos, Renders e Imágenes</li>
+      <li>Producción Audiovisual</li>
+      <li>Asistencia Pre-Producción</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <strong>AI Studios Industries</strong>
+    <ul>
+      <li><strong>AI Pods:</strong> impulsado por la IA Agéntica. Manejados por Arquitectos Senior de Globant. Basado en resultados.</li>
+      <li><strong>AI Agents:</strong> los Agentes de IA de Globant aprovechan algoritmos avanzados para automatizar tareas, mejorar la toma de decisiones e impulsar la eficiencia en varios sectores.</li>
+    </ul>
+  </td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text"><strong>Pencil:</strong> plataforma de IA entrenada con USD 2.650 millones en inversión publicitaria y 235.000 recursos generados por IA.</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+</tr>
+
+<!-- ==================== PERFILES DEL EQUIPO ==================== -->
+<tr class="section-header"><td colspan="14">Perfiles del Equipo</td></tr>
+<tr class="text-row">
+  <td>Estructura del equipo</td><td>—</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text">
+    <ul>
+      <li>CEO - Founder</li>
+      <li>Co-Founder | CLO - CHRO</li>
+      <li>Co-Founder | COO</li>
+      <li>Content Creator</li>
+      <li>Project Manager</li>
+      <li>Accounting Assistant</li>
+      <li>Audiovisual Executive</li>
+      <li>Paid Media Leader</li>
+      <li>PMO Manager</li>
+      <li>Project Support</li>
+      <li>Accounting Analyst</li>
+      <li>Automation Manager</li>
+      <li>Administrative and Accounting Assistant</li>
+      <li>HR Business Partner</li>
+      <li>Full Stack Designer</li>
+      <li>Growth Social Manager</li>
+      <li>Growth Performance Analyst</li>
+      <li>Strategic Planner</li>
+      <li>Data Analyst</li>
+      <li>Líder de Vocería Experta</li>
+      <li>Growth Automation Director</li>
+      <li>Head of SEO</li>
+      <li>Strategic Data and Planner</li>
+      <li>Full Stack Developer</li>
+      <li>UX Writer</li>
+      <li>Creative Director</li>
+    </ul>
+  </td>
+  <td class="value-text">
+    <ul>
+      <li>CEO &amp; Partner</li>
+      <li>Partner</li>
+      <li>Managing Director</li>
+      <li>SVP, Head of Accounts</li>
+      <li>SVP, Technology &amp; Business Intelligence</li>
+      <li>VP of Finance &amp; Operations</li>
+      <li>Regional Accounts Director</li>
+      <li>Sr. Accounts Director</li>
+      <li>Accounts Director</li>
+      <li>Head of Media &amp; Performance</li>
+      <li>Planning Director</li>
+      <li>Growth &amp; Business Intelligence Director</li>
+      <li>Media y Performance Director</li>
+      <li>Regional Head of People</li>
+      <li>IT Project Manager</li>
+      <li>Creative Director</li>
+      <li>Audiovisual &amp; Digital Vfx Director</li>
+    </ul>
+  </td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text">
+    <ul>
+      <li>Managing Director</li>
+      <li>Business Lead</li>
+      <li>Head of Performance</li>
+    </ul>
+  </td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+</tr>
+
+<!-- ==================== PROGRAMAS DE CAPACITACIÓN / BLOGS ==================== -->
+<tr class="section-header"><td colspan="14">Programas de Capacitación / Blogs</td></tr>
+<tr class="text-row">
+  <td>Educación &amp; contenidos</td><td>—</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text">
+    <ul>
+      <li>Mapa de empatía</li>
+      <li>Brainwriting</li>
+      <li>Marca Personal</li>
+      <li>Redes Sociales</li>
+      <li>Estrategia de Contenidos</li>
+      <li>Arquetipo de Marca</li>
+      <li>Marketing Digital</li>
+    </ul>
+  </td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text">
+    <ul>
+      <li>Globant University</li>
+      <li>Programa de Aceleración del Liderazgo</li>
+    </ul>
+  </td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text">
+    <ul>
+      <li>Performance Marketing</li>
+      <li>SEO</li>
+      <li>Growth Hacking</li>
+      <li>Analytics &amp; Data</li>
+    </ul>
+  </td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text">
+    <ul>
+      <li>Gen AI</li>
+      <li>Google Gemini</li>
+      <li>Microsoft Copilot</li>
+      <li>SEO y GEO</li>
+    </ul>
+  </td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+</tr>
+
+<!-- ==================== PRECIOS ==================== -->
+<tr class="section-header"><td colspan="14">Precios</td></tr>
+<tr class="text-row">
+  <td>Tarifas referenciales</td><td>—</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text">
+    <strong>Auditoría digital de performance, CRO y web:</strong> el costo final se determina en función de las áreas a analizar, complejidad del mercado y duración del acompañamiento estratégico. <strong>Desde USD 4.100</strong>.<br><br>
+    <strong>Diseño web profesional:</strong> el costo final se determina en función de la cantidad de páginas, complejidad de los requerimientos y duración del acompañamiento post-lanzamiento. <strong>Desde USD 3.400</strong>.<br><br>
+    <strong>Gestión de pautas digitales (Google y Meta Ads):</strong> el costo final se determina en función de la cantidad de campañas activas, monto de inversión y complejidad del mercado. <strong>Desde USD 710</strong>.
+  </td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+  <td class="value-text na-text">N/D</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+</div>
+</body>
+</html>
